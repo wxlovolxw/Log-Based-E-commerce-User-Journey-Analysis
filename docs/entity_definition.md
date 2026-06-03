@@ -57,7 +57,7 @@
 
 | 속성 | 설명 | 비고 |
 |---|---|---|
-| `item_id` | 상품 식별자 | 주요 식별자 |
+| `product_id` | 상품 식별자 | 주요 식별자, 이벤트 파라미터 `item_id`와 매핑 |
 | `item_name` | 상품명 | 주요 속성 |
 | `category_id` | 상품이 속한 카테고리 식별자 | `categories.category_id` 참조 |
 | `brand` | 브랜드 | 선택 속성 |
@@ -82,7 +82,7 @@
 |---|---|---|
 | `order_item_id` | 주문 상품 행 식별자 | 주요 식별자 후보 |
 | `order_id` | 주문 식별자 | `orders.order_id` 참조 |
-| `item_id` | 상품 식별자 | `products.item_id` 참조 |
+| `product_id` | 상품 식별자 | `products.product_id` 참조 |
 | `quantity` | 주문 수량 | 1 이상 |
 | `unit_price` | 상품 단가 | KRW 기준 |
 | `item_amount` | 주문 상품 금액 | 수량과 단가 기준 산출 가능 |
@@ -94,10 +94,30 @@
 | `review_id` | 리뷰 식별자 | 주요 식별자 |
 | `user_id` | 리뷰 작성 사용자 식별자 | `users.user_id` 참조 |
 | `order_id` | 리뷰와 연결된 주문 식별자 | `orders.order_id` 참조 |
-| `item_id` | 리뷰 대상 상품 식별자 | `products.item_id` 참조 |
+| `product_id` | 리뷰 대상 상품 식별자 | `products.product_id` 참조 |
 | `rating` | 평점 | 정의된 평점 범위 필요 |
 | `review_created_at` | 리뷰 작성 시각 | `review_write` 기준 |
 | `review_length` | 리뷰 본문 길이 | 선택 속성 |
 | `has_photo` | 사진 첨부 여부 | 선택 속성 |
 | `has_video` | 영상 첨부 여부 | 선택 속성 |
 
+## 4. 엔티티 간 관계 분석
+
+이 섹션은 1차 엔티티 간 관계를 논리적으로 정리한 초안이다. 아직 물리적 테이블 설계 단계가 아니므로 외래 키 제약 조건이나 SQL DDL은 작성하지 않는다.
+
+상품 식별자는 엔티티 관계에서는 `product_id`로 표기한다. 이벤트 정의서의 GA4 스타일 이벤트 파라미터 `item_id`는 상품 엔티티의 `product_id`에 매핑되는 값으로 본다.
+
+| 관계 | 설명 | 참조 기준 | 비고 |
+|---|---|---|---|
+| `users` 1:N `sessions` | 한 사용자는 여러 세션을 가질 수 있다. | `sessions.user_id` -> `users.user_id` | 필수 관계 |
+| `sessions` 1:N `event_logs` | 한 세션 안에는 여러 이벤트가 발생할 수 있다. | `event_logs.session_id` -> `sessions.session_id` | 필수 관계 |
+| `users` 1:N `event_logs` | 한 사용자는 여러 이벤트를 발생시킬 수 있다. | `event_logs.user_id` -> `users.user_id` | `event_logs.user_id`는 분석 편의성을 위해 중복 저장하며 `sessions.user_id`와 정합성 검증이 필요하다. |
+| `categories` 1:N `products` | 한 카테고리는 여러 상품을 가진다. | `products.category_id` -> `categories.category_id` | 상품 카테고리 분석 기준 |
+| `products` 1:N `event_logs` | 한 상품은 여러 상품 관련 이벤트에서 참조될 수 있다. | `event_logs.product_id` -> `products.product_id` | 모든 이벤트가 `product_id`를 갖는 것은 아니므로 nullable 관계로 본다. |
+| `users` 1:N `orders` | 한 사용자는 여러 주문을 할 수 있다. | `orders.user_id` -> `users.user_id` | 구매 사용자 분석 기준 |
+| `sessions` 1:N `orders` | 한 세션에서 0개 이상의 주문이 발생할 수 있다. | `orders.session_id` -> `sessions.session_id` | 세션별 구매 전환 분석 기준 |
+| `orders` 1:N `order_items` | 한 주문은 여러 주문 상품 행을 가진다. | `order_items.order_id` -> `orders.order_id` | 주문 상세 분석 기준 |
+| `products` 1:N `order_items` | 한 상품은 여러 주문 상품 행에 포함될 수 있다. | `order_items.product_id` -> `products.product_id` | 상품별 구매 분석 기준 |
+| `users` 1:N `reviews` | 한 사용자는 여러 리뷰를 작성할 수 있다. | `reviews.user_id` -> `users.user_id` | 리뷰 작성 사용자 분석 기준 |
+| `products` 1:N `reviews` | 한 상품은 여러 리뷰를 받을 수 있다. | `reviews.product_id` -> `products.product_id` | 상품별 리뷰 분석 기준 |
+| `orders` 1:N `reviews` | 한 주문에서 여러 상품 리뷰가 작성될 수 있다. | `reviews.order_id` -> `orders.order_id` | 주문 상품별 리뷰가 작성될 수 있음을 전제로 한다. |

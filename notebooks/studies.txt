@@ -450,4 +450,400 @@ ex) view_item 이벤트
         search_terms, carts, cart_items, traffic_source, coupons, promotions 등
 
         
+------------------------------------------------------------------------------------------------
 
+각 이벤트의 엔티티 참조 확인 + 설명을 위한 파라미터
+
+1. session_start
+
+    사용자가 서비스를 방문해서 세션을 시작했다.
+
+    사용자, 세션 -> users, sessions
+
+    파라미터 - traffic_source, medium, campaign, device_type, platform, landing_page
+
+
+2. search
+    
+    사용자가 검색했다.
+
+    사용자, 세션-> users, session
+
+    * 검색어는 엔티티가 아닌 이벤트 파라미터로 설정.
+
+    -> 이후의 이벤트를 묶는 단위가 아닌 설명값에 가깝기 때문에 파라미터로 설정.
+
+    * 이벤트가 늘 새로운 엔티티를 만드는 것은 아니다.
+
+    파라미터 - search_term, page_number
+
+
+3. view_item_list
+
+    사용자가 상품 목록 화면을 봤다. -> 특정 상품 하나가 아닌 여러 상품이 나열된 목록 화면
+
+    사용자, 세션, 카테고리 -> users, session, categorie
+
+    파라미터 - list_id, page_number
+
+
+4. view_item
+
+    사용자가 특정 상품 상세 페이지를 봤다.
+
+    사용자, 세션, 상품 -> users, sessions, products
+
+    (누가, 어떤방분에서, 어떤 상품을 봤는가)
+
+    파라미터 - 없음 / position, list_id
+
+
+5. add_to_cart
+
+    사용자가 특정 상품을 장바구니에 담았다. (구매 의도가 강한 행동)
+
+    사용자, 세션, 상품 -> users, sessions, product
+
+    * 장바구니 상태를 더 상세히 보려면 carts 테이블을 별도로 생성
+
+    -> 현재로서는 장바구니에 담았다 라는 행동 자체가 중요함.
+
+    파라미터 - quantity, price
+
+
+6. begin_checkout
+
+    사용자가 결제 절차를 시작했다. (퍼널분석에서 매우 중요)
+
+    사용자, 세션 -> users, sessions
+
+    파라미터 - items_count, total_value
+
+
+7. purchase
+
+    사용자가 구매를 완료했다. (주문이 생성되고 구매가 완료 됨.)
+
+    사용자, 세션, 구매 -> users, sessions, orders
+
+    * purchase 이벤트에서는 order_id를 남기고, 상세 정보는 orders 테이블에서 관리한다.
+
+    파라미터 - total_value, payment_method
+
+
+8. review_write
+
+    사용자가 구매 이후 리뷰를 작성함. (구매 전환 이후의 행동을 보는 이벤트.)
+
+    구매 이후 사용자가 어떤 행동을 하는가?
+
+    사용자, 세션, 제품, 구매, 리뷰 -> users, sessions, product, orders, review
+
+    파라미터 - rating, review_length
+
+
+------------------------------------------------------------------------------------------------
+
+엔티티별 역할
+
+    users       사용자를 식별하고 사용자 단위의 행동 여정을 연결하는 기준 엔티티
+
+    sessions    사용자의 한 번의 방문 단위를 나타내며, 세션 단위 퍼널과 이탈 분석의 기준 엔티티
+
+    categories  상품 분류 정보를 관리하며, 카테고리별 조회/전환/이탈 분석에 사용되는 참조 엔티티
+
+    products    사용자가 조회/장바구니/구매/리뷰 작성하는 상품 정보를 관리하는 핵심 엔티티
+
+    orders      구매 완료로 생성된 주문 단위 정보를 관리하는 엔티티
+
+    order_items 하나의 주문에 포함된 개별 상품 정보를 표현하는 연결 엔티티
+
+        -> orders와 products 사이의 관계를 풀어주는 엔티티
+
+    reviews     구매 이후 사용자가 작성한 리뷰 정보를 관리하는 엔티티
+
+------------------------------------------------------------------------------------------------
+
+엔티티 별 주요 속성
+
+    엔티티가 어떤 정보를 가져야 하는지.
+
+    1. users : 사용자 단위 여정을 연결하는 기준 엔티티
+
+        user_id         사용자 식별 * 핵심
+
+        signup_date     가입일
+
+        user_type       신규/기존/회원/비회원 등 사용자 유형
+
+        gender          성별, 선택 가능
+
+        age_group       연령대, 선택가능
+
+        -> 사용자의 여러 세션과 행동의 연결이 필요
+
+        users.user_id -> event_log.user_id -> sessions.user_id, orders.user_id
+
+
+    2. sessions : 한번의 방문 단위 (퍼널 분석의 기준)
+
+        session_id          세션 식별자
+
+        user_id             세션을 발생시킨 사용자
+
+        session_start_time  세션 시작 시간
+
+        session_end_time    세션 종료 시각
+
+        traffic_source      유입 출처
+
+        medium              유입 매체
+
+        campaign            캠페인명
+
+        device_type         기기 유형
+
+        platform            웹/앱 구분
+
+        landing_page        첫 진입 페이지
+
+        -> 한 세션 안에서,
+
+        session_start -> search -> view_item -> add_to_cart -> purchase
+
+        까지 갔는지 확인하고 싶음.
+
+
+    3. categories : 상품 분류 기준
+
+        category_id         카테고리 식별자
+
+        category_name       카테고리명
+
+        (parent_category_id  상위 카테고리, 선택가능) -> 대분류 / 중분류 구조
+
+
+    4. products : 상품 정보를 관리
+
+        product_id          상품 식별자
+
+        product_name        상품명
+
+        category_id         카테고리 식별자
+
+        brand               브랜드
+
+        price               현재 상품 가격
+
+        created_at          상품 등록일
+
+        is_active           판매 활성 상태
+
+        -> 상품은 여러 이벤트에서 계속 참조되기 때문에 핵심 엔티티임
+
+
+    5. orders : 구매 완료 후 생성된 주문 단위
+
+        order_id            주문 식별자
+
+        user_id             주문한 사용자
+
+        session_id          주문이 발생한 세션
+
+        order_timestamp     주문 시각
+
+        total_value         주문 총액
+
+        payment_method      결제 수단
+
+        order_status        주문 상태
+
+        -> 취소/환불/완료 여부를 위해 order_status가 필요함
+
+
+    6. order_items : 주문 안의 개별 상품 단위
+
+        order_item_id       주문 상품 행 식별자
+
+        order_id            주문 식별자
+
+        product_id          상품 식별자
+
+        quantity            구매 수량
+
+        item_price          구매 당시 상품 단가
+
+        discount_amount     할인 금액, 선택 가능
+
+        -> 상품 가격이 변할 수 있으니 product.price와 order_items.item_price는 따로 남겨두는게 좋음.
+
+
+    7. reviews : 구매 이후 작성된 리뷰
+
+        review_id           리뷰 식별자
+
+        user_id             리뷰 작성자
+
+        product_id          리뷰 대상 상품
+
+        order_id            리뷰와 연결된 주문
+
+        rating              평점
+
+        review_length       리뷰 길이
+
+        created_at          리뷰 작성 시각
+
+        -> 현재는 본문 텍스트 까지 분석하는게 목적은 아님
+
+
+------------------------------------------------------------------------------------------------
+
+엔티티 관계 확인 (직접 관계 -> PK-FK 연결)
+
+    users 1:N sessions	        한 사용자는 여러 세션을 가질 수 있다
+
+        sessions.user_id -> users.user_id
+
+        한 사용자는 여러 세션을 가질 수 있다. 하나의 세션은 한 사용자에게 속한다.
+
+    sessions 1:N event_logs	    한 세션 안에는 여러 이벤트가 발생할 수 있다
+
+        event_logs.session_id -> sessions.session_id
+        
+        한 세션 안에는 여러 이벤트가 발생할 수 있다. 하나의 이벤트는 하나의 세션에 속한다.
+
+    users 1:N event_logs	    한 사용자는 여러 이벤트를 발생시킬 수 있다
+
+        event_logs.user_id -> users.user_id
+
+        한 사용자는 여러 이벤트를 발생시킬 수 있다. 하나의 이벤트는 한 사용자에게 속한다.
+
+        * event에 user_id가 없어도, sessions를 통해 user를 확인할 수 있지만, 편의상 사용하도록 한다.
+
+    categories 1:N products	    한 카테고리는 여러 상품을 가진다
+
+        products.category_id -> categories.category_id
+
+        상품은 어떤 카테고리에 속해있고, 카테고리는 여러 상품을 가질수 있다.
+
+        (카테고리별 행동 분석)
+
+        -> event_logs에 category_id를 저장할수 있지만 products.category_id와 중복이 발생
+
+        -> 따라서 category_id는 products를 통해 확인하는 방식 선택
+
+    products 1:N event_logs	    한 상품은 여러 조회/장바구니 이벤트에서 참조될 수 있다
+
+        상품 관련 이벤트에는 product_id가 포함된다.
+
+        ex) view_item을 보면, U001 사용자가 S001 세션에서 P001 상품을 봤다.
+
+        event_logs.product_id -> products.product_id
+
+        하나의 상품은 여러 이벤트에서 반복적으로 등장할 수 있음.
+
+        ** 단, 모든 event_logs가 product_id를 갖는건 아님. 상품을 참조하지 않는 이벤트도 존재. 
+
+    users 1:N orders	        한 사용자는 여러 주문을 할 수 있다
+
+        orders.user_id -> users.user_id
+
+        한 사용자는 여러 주문을 할 수 있다. 하나의 주문은 한 사용자에게 속한다.
+
+    sessions 1:N orders	        한 세션에서 여러 주문이 발생할 수 있다
+
+        orders.session_id -> sessions.session_id
+
+        한 세션에서 주문이 발생할 수 있다. 하나의 주문은 특정 세션에서 발생한다.
+
+        ** 한 세션에서 주문이 0개일 수도, 1개일 수도, 여러개 일 수도 있다.
+
+    orders 1:N order_items	    한 주문은 여러 상품 행을 가진다
+
+        order_items.order_id -> orders.order_id
+
+        한 주문은 여러 주문 상품 행을 가질 수 있다. 하나의 주문 상품 행은 하나의 주문에 속한다.
+
+        ** users -> sessions -> orders -> order_items
+
+        (사용자별 구매 여부, 세션별 구매 전환율, 주문당 상품 수, 상품/카테고리별 매출)
+
+    products 1:N order_items	한 상품은 여러 주문 상품 행에 포함될 수 있다
+
+        order_items.product_id -> products.product_id
+
+        하나의 상품은 여러 주문 상품 행에 포함될 수 있다. 하나의 주문 상품 행은 하나의 상품을 가리킨다.
+
+    users 1:N reviews	        한 사용자는 여러 리뷰를 작성할 수 있다
+
+        reviews.user_id -> users.user_id
+
+        한 사용자는 여러 리뷰를 작성할 수 있다. 하나의 리뷰는 한 사용자가 작성한다.
+
+    products 1:N reviews	    한 상품은 여러 리뷰를 받을 수 있다
+
+        reviews.product_id -> products.product_id
+
+        한 상품은 여러 리뷰를 받을 수 있다. 하나의 리뷰는 하나의 상품에 대해 작성된다.
+
+    orders 1:N reviews	        한 주문에서 여러 리뷰가 작성될 수 있다
+
+        reviews.order_id -> orders.order_id
+
+        한 주문에서 여러 리뷰가 작성될 수 있다. 하나의 리뷰는 특정 주문을 바탕으로 작성된다.
+
+------------------------------------------------------------------------------------------------
+
+정합성 검정 - 테이블 간 연결된 ID들이 서로 모순이 없이 맞는지 확인하는 규칙을 정하는 단계
+
+- 참조 무결성
+- 중복 저장된 정보의 일치 여부
+- 비즈니스 규칙 검증
+
+    1. 사용자 - 세션 - 이벤트 정합성 (세션은 실제 사용자에게 속해야 한다.)
+
+        users, sessions, event_logs
+
+        ** event_logs.session_id는 sessions.session_id에 존재해야 한다.
+
+        (이벤트 로그에 기록된 세션은 실제 session 테이블에 존재하는 세션이여야 한다.)
+
+
+    2. event_logs.user_id 와 sessions.user_id의 일치 (이벤트는 실제 세션에 속해야 한다.)
+
+        event_logs.user_id = sessions.user_id
+
+
+    3. sessions.user_id는 users.user_id에 존재해야 한다. (이벤트의 사용자와 세션의 사용자가 일치해야 한다.)
+
+        sessions.user_id는 users.user_id에 존재해야 한다.
+
+
+    4. 주문 - 세션 - 사용자 정합성
+
+        orders.user_id는 users.user_id에 존재해야 한다. (주문 사용자는 실제 사용자여야 한다.)
+
+        orders.session_id는 sessions.session_id에 존재해야 한다. (주문은 실제 세션에서 발생해야 한다.)
+
+        orders.user_id = sessions.user_id 이어야 한다. (주문 사용자와 세션 사용자가 일치해야 한다.)
+
+
+    5. 주문 이벤트와 주문 테이블 정합성
+
+        event_logs에서 event_name = 'purchase'인 경우,
+
+        -> event_logs.order_id는 orders.order_id에 존재해야 한다. (구매 이벤트는 실제 주문과 연결되어야 한다.)
+
+        purchase 이벤트의 user_id/session_id는 orders의 user_id/session_id와 일치해야 한다.
+
+        (구매 이벤트 사용자와 주문 사용자가 일치해야 한다.)
+
+
+    *** event_logs, sessions, orders에 user_id가 반복해서 들어간다.
+
+    그래서 같은 session_id/order_id를 기준으로 user_id가 서로 일치해야 한다.
+
+    -> 단순히 ID가 존재하는지만 확인하는 것이 아니라, 
+    
+    '이 이벤트/주문이 정말 그 사용자의 세션에서 발생했는가?' 까지 확인해야 함.

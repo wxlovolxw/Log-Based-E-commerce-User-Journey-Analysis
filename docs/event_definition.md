@@ -29,9 +29,28 @@
 
 현재 프로젝트는 국내 이커머스 서비스를 가정하므로 금액 단위는 KRW로 고정한다. 따라서 이벤트별 파라미터에서 `currency`는 별도로 수집하지 않으며, `value`는 원화 기준 금액으로 정의한다.
 
-## 3. 이벤트 정의
+## 3. 이벤트별 참조 엔티티 매핑
 
-### 3.1 session_start
+이벤트 로그에는 행동 발생 사실을 기록하고, 해당 행동이 어떤 주요 엔티티와 연결되는지 식별할 수 있는 참조 ID를 함께 저장한다.
+
+`user_id`, `session_id`, `item_id`, `order_id`, `review_id`, `category_id`처럼 다른 엔티티를 식별하거나 연결하기 위한 값은 entity reference id로 본다. 반면 `search_term`, `quantity`, `value`, `rating`, `traffic_source`처럼 이벤트 자체의 맥락, 속성, 측정값을 설명하는 값은 일반 event parameter로 본다.
+
+entity reference id는 향후 `users`, `sessions`, `products`, `orders`, `reviews`, `categories` 같은 엔티티 테이블과 조인하거나 정합성을 검증하는 기준으로 사용한다. 일반 event parameter는 이벤트의 의미를 보강하고 분석 필터, 세그먼트, 지표 계산에 활용한다.
+
+| 이벤트 | 참조 엔티티 |
+|---|---|
+| `session_start` | `users`, `sessions` |
+| `search` | `users`, `sessions` |
+| `view_item_list` | `users`, `sessions`, `categories` |
+| `view_item` | `users`, `sessions`, `products` |
+| `add_to_cart` | `users`, `sessions`, `products` |
+| `begin_checkout` | `users`, `sessions` |
+| `purchase` | `users`, `sessions`, `orders` |
+| `review_write` | `users`, `sessions`, `orders`, `products`, `reviews` |
+
+## 4. 이벤트 정의
+
+### 4.1 session_start
 
 | 항목 | 내용 |
 |---|---|
@@ -43,7 +62,7 @@
 | 선택 파라미터 | `traffic_source`, `medium`, `campaign`, `device_type`, `platform`, `landing_page` |
 | 주의할 정합성 검증 포인트 | 동일 `session_id` 내에서 `session_start`가 중복 발생하지 않는지 확인한다. 동일 세션의 다른 이벤트보다 늦게 기록되지 않았는지 확인한다. `user_id`와 `session_id`가 누락되지 않아야 한다. |
 
-### 3.2 search
+### 4.2 search
 
 | 항목 | 내용 |
 |---|---|
@@ -55,7 +74,7 @@
 | 선택 파라미터 | `search_result_count`, `search_type`, `category_id`, `sort_option`, `filter_options` |
 | 주의할 정합성 검증 포인트 | `search_term`이 비어 있거나 공백만 있는지 확인한다. 검색 결과 수가 음수로 기록되지 않아야 한다. 동일 사용자가 짧은 시간 내 같은 검색어를 반복 실행한 경우 중복 이벤트 여부를 확인한다. |
 
-### 3.3 view_item_list
+### 4.3 view_item_list
 
 | 항목 | 내용 |
 |---|---|
@@ -67,7 +86,7 @@
 | 선택 파라미터 | `item_list_name` |
 | 주의할 정합성 검증 포인트 | `item_list_id`가 누락되지 않아야 한다. `item_list_name`이 있는 경우 동일 `item_list_id`에 대해 일관된 목록명으로 기록되는지 확인한다. |
 
-### 3.4 view_item
+### 4.4 view_item
 
 | 항목 | 내용 |
 |---|---|
@@ -79,7 +98,7 @@
 | 선택 파라미터 | `item_name` |
 | 주의할 정합성 검증 포인트 | `item_id`가 누락되지 않아야 한다. `item_name`이 있는 경우 동일 `item_id`에 대해 일관된 상품명으로 기록되는지 확인한다. |
 
-### 3.5 add_to_cart
+### 4.5 add_to_cart
 
 | 항목 | 내용 |
 |---|---|
@@ -91,7 +110,7 @@
 | 선택 파라미터 | `item_name` |
 | 주의할 정합성 검증 포인트 | `quantity`는 1 이상이어야 한다. `item_id`가 누락되지 않아야 한다. 같은 세션에서 `view_item` 없이 `add_to_cart`가 발생한 경우 허용 가능한 유입 경로인지 확인한다. |
 
-### 3.6 begin_checkout
+### 4.6 begin_checkout
 
 | 항목 | 내용 |
 |---|---|
@@ -103,7 +122,7 @@
 | 선택 파라미터 | `items` |
 | 주의할 정합성 검증 포인트 | `checkout_id`가 누락되지 않아야 한다. `value`는 원화 기준 금액이며 0 이상이어야 한다. `items`가 있는 경우 상품 ID가 비어 있지 않은지 확인한다. `items`는 향후 `checkout_items` 또는 `cart_items` 테이블로 분리할 수 있다. 일반 장바구니 구매 흐름에서는 앞선 `add_to_cart` 이벤트와 연결 가능한지 확인한다. |
 
-### 3.7 purchase
+### 4.7 purchase
 
 | 항목 | 내용 |
 |---|---|
@@ -115,7 +134,7 @@
 | 선택 파라미터 | `items` |
 | 주의할 정합성 검증 포인트 | `order_id`가 누락되지 않아야 하며 중복 구매로 기록되지 않아야 한다. `value`는 원화 기준 금액이며 상품 금액, 배송비, 세금, 할인 정책과 일관되어야 한다. `items`가 있는 경우 상품 ID가 비어 있지 않은지 확인한다. `items`는 향후 `order_items` 테이블로 분리할 수 있다. 같은 세션 또는 합리적인 시간 범위 내의 `begin_checkout`과 연결 가능한지 확인한다. |
 
-### 3.8 review_write
+### 4.8 review_write
 
 | 항목 | 내용 |
 |---|---|
@@ -127,7 +146,7 @@
 | 선택 파라미터 | `review_length`, `has_photo`, `has_video`, `category_id`, `category_name` |
 | 주의할 정합성 검증 포인트 | 리뷰는 구매 이후 행동이므로 `order_id`가 실제 `purchase` 이벤트와 연결 가능한지 확인한다. `rating`은 정의된 평점 범위 안에 있어야 한다. 동일 `review_id`가 중복 기록되지 않아야 한다. |
 
-## 4. 공통 정합성 검증 기준
+## 5. 공통 정합성 검증 기준
 
 - 모든 이벤트는 허용된 `event_name` 목록에 포함되어야 한다.
 - 모든 이벤트는 `event_timestamp`, `user_id`, `session_id`를 가져야 한다.

@@ -28,3 +28,34 @@ mysql -u <user> -p <database_name> < sql/basic_validation.sql
 - `event_logs` 최종 43건 확인
 - 구매 이벤트와 주문/세션 조인 확인
 - 리뷰 작성 이벤트와 리뷰 테이블 조인 확인
+
+## 실행 검증 결과
+
+MySQL Workbench에서 다음 순서로 SQL 파일을 실행했다.
+
+1. `sql/schema.sql`
+2. `sql/seed_data.sql`
+3. `sql/basic_validation.sql`
+
+실행 결과 테이블 생성과 샘플 데이터 삽입이 정상적으로 완료되었다.
+
+`sql/basic_validation.sql`의 row count 확인 결과는 다음과 같다.
+
+| table_name | row_count |
+|---|---:|
+| `users` | 5 |
+| `categories` | 4 |
+| `products` | 8 |
+| `sessions` | 8 |
+| `orders` | 3 |
+| `order_items` | 6 |
+| `reviews` | 3 |
+| `event_logs` | 43 |
+
+`event_logs`는 최종 43건으로 확인되었다.
+
+여러 Result Grid가 생성되었으며, 구매 이벤트-주문 조인과 리뷰 이벤트-리뷰 조인 결과도 정상적으로 조회되었다.
+
+## 다음 단계
+
+- `sql/quality_checks.sql` 작성

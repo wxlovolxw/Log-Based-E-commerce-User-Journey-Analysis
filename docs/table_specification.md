@@ -19,9 +19,9 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 
 ## 3. 테이블별 명세
 
-## users
+### users
 
-### 역할
+#### 역할
 
 서비스를 이용하는 사용자를 관리한다. 사용자 단위 행동 분석과 세션, 주문, 리뷰 연결의 기준이 된다.
 
@@ -33,9 +33,9 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 | `age_group` | `VARCHAR(20)` | - | Y | 연령대. exact age 대신 범주형으로 관리 |
 | `gender` | `VARCHAR(20)` | - | Y | 성별. 분석 목적상 선택 속성 |
 
-## sessions
+### sessions
 
-### 역할
+#### 역할
 
 사용자의 방문 단위를 관리한다. 유입 경로, 기기, 플랫폼, 랜딩 페이지 기준의 세션 분석에 사용한다.
 
@@ -52,11 +52,15 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 | `platform` | `VARCHAR(30)` | - | Y | 웹/앱 구분 |
 | `landing_page` | `VARCHAR(255)` | - | Y | 첫 진입 페이지 |
 
-## event_logs
+### event_logs
 
-### 역할
+#### 역할
 
 사용자 행동 이벤트를 단일 로그 테이블로 관리한다. 주요 퍼널 단계와 이벤트별 파라미터를 함께 저장해 초기 SQL 분석을 단순하게 수행할 수 있도록 한다.
+
+`category_id`는 주로 `view_item_list`처럼 특정 상품이 아닌 카테고리/목록 단위 이벤트에서 사용한다. 상품 상세 조회나 장바구니 추가처럼 특정 상품을 참조하는 이벤트의 카테고리는 원칙적으로 `products.category_id`를 통해 확인한다.
+
+`rating`, `review_length`는 `review_write` 이벤트 분석 편의를 위한 이벤트 파라미터이며, 리뷰 상세 정보의 기준 저장소는 `reviews` 테이블로 본다.
 
 | column | type | key | nullable | description |
 |---|---|---|---|---|
@@ -81,9 +85,9 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 | `rating` | `TINYINT` | - | Y | 리뷰 평점 |
 | `review_length` | `INT` | - | Y | 리뷰 길이 |
 
-## categories
+### categories
 
-### 역할
+#### 역할
 
 상품 분류 체계를 관리한다. 상품, 목록 조회, 카테고리 탐색 분석의 기준이 된다.
 
@@ -93,9 +97,9 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 | `category_name` | `VARCHAR(100)` | - | N | 카테고리명 |
 | `parent_category_id` | `VARCHAR(50)` | FK | Y | 상위 카테고리 식별자 |
 
-## products
+### products
 
-### 역할
+#### 역할
 
 판매 상품 정보를 관리한다. 상품 조회, 장바구니, 구매, 리뷰 분석에서 상품 속성을 연결하는 기준이 된다.
 
@@ -109,9 +113,9 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 | `created_at` | `DATETIME` | - | Y | 상품 등록 시각 |
 | `is_active` | `BOOLEAN` | - | N | 현재 판매 활성 여부 |
 
-## orders
+### orders
 
-### 역할
+#### 역할
 
 사용자의 주문 결과를 관리한다. 구매 전환, 매출, 결제 수단, 주문 상태 분석의 기준이 된다.
 
@@ -125,9 +129,9 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 | `payment_method` | `VARCHAR(30)` | - | Y | 결제 수단 |
 | `order_status` | `VARCHAR(30)` | - | N | 주문 상태 |
 
-## order_items
+### order_items
 
-### 역할
+#### 역할
 
 주문에 포함된 개별 상품 행을 관리한다. 주문 금액 검증, 상품별 구매 수량, 상품 단위 할인 분석에 사용한다.
 
@@ -140,9 +144,9 @@ MySQL `schema.sql` 작성 전 단계의 사람용 설계 문서이며, 실제 `C
 | `item_price` | `DECIMAL(10,2)` | - | N | 구매 당시 상품 단가 |
 | `discount_amount` | `DECIMAL(10,2)` | - | Y | 상품 단위 할인 금액 |
 
-## reviews
+### reviews
 
-### 역할
+#### 역할
 
 구매 이후 작성된 상품 리뷰를 관리한다. 리뷰 작성 전환과 구매 상품 기준 리뷰 정합성 검증에 사용한다.
 

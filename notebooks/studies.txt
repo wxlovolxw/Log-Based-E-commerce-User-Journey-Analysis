@@ -795,11 +795,13 @@ ex) view_item 이벤트
 
 ------------------------------------------------------------------------------------------------
 
-정합성 검정 - 테이블 간 연결된 ID들이 서로 모순이 없이 맞는지 확인하는 규칙을 정하는 단계
+정합성 검정 1차 - 테이블 간 연결된 ID들이 서로 모순이 없이 맞는지 확인하는 규칙을 정하는 단계
 
 - 참조 무결성
 - 중복 저장된 정보의 일치 여부
 - 비즈니스 규칙 검증
+
+-> users, sessions, event_log, orders, purchase
 
     1. 사용자 - 세션 - 이벤트 정합성 (세션은 실제 사용자에게 속해야 한다.)
 
@@ -847,3 +849,542 @@ ex) view_item 이벤트
     -> 단순히 ID가 존재하는지만 확인하는 것이 아니라, 
     
     '이 이벤트/주문이 정말 그 사용자의 세션에서 발생했는가?' 까지 확인해야 함.
+
+-----------------------------------------------------------------------------------
+
+정합성 검증 2차 - categories, products, order_items, reviews
+
+    1. 상품 - 카테고리 정합성
+
+        products - categories
+
+        products.category_id 는 categories.category_id에 존재해야 한다.
+
+        -> 상품은 실제 존재하는 카테고리에 속해야 한다.
+
+    
+    2. 이벤트 - 상품 정합성
+
+        event_logs - products
+
+        상품 관련 이벤트의 product_id는 products.product_id에 존재해야 한다.
+
+        * 모든 이벤트가 product_id를 갖는 것은 아님.
+
+        -> 상품 관련 이벤트는 실제 상품을 참조해야 한다.
+
+    
+    3. 주문상품 - order_items 정합성
+
+        order_items.order_id 는 orders.order_id에 존재해야 한다.
+
+        -> 주문 상품 행은 실제 주문에 속해야 한다.
+
+
+    4. 주문상품 - 상품 정합성
+
+        order_items.product_id는 products.product_id에 존재해야 한다.
+
+        -> 주문 상품 행은 실제 상품을 참조해야 한다.
+
+
+    5. 주문 총액 정합성
+
+        orders.total_value는 order_items 기준 계산 금액과 일관되어야 한다.
+
+        단, 배송비/쿠폰/포인트/세금 정책이 추가되면 계산식은 조정될 수 있다.
+
+        -> 주문 총액은 주문 상품 행 기준 금액과 일관되어야 한다.
+
+
+    6. 리뷰 - 사용자 정합성
+
+        reviews.user_id 는 users.user_id에 존재해야 한다.
+
+        -> 리뷰 작성자는 실제 사용자여야 한다.
+    
+
+    7. 리뷰 - 상품 정합성
+
+        reviews.product_id 는 products.product_id에 존재해야 한다.
+
+        -> 리뷰 대상 상품은 실제 상품이어야 한다.
+
+
+    8. 리뷰 - 주문 정합성
+
+        reviews.order_id 는 orders.order_id에 존재해야 한다.
+
+        -> 리뷰는 실제 주문에 연결되어야 한다.
+
+
+    9. 리뷰 작성자와 주문자 일치
+
+        -> 리뷰 작성자는 해당 주문의 구매자여야 한다.
+
+
+    10. 리뷰 상품이 실제 구매 상품인지 검증
+
+        단순히 reviews.order_id가 orders에 있고, reviews.product_id가 products에 있다고 충분하지 않음.
+
+        이 조합이 실제 주문 상품에 있어야 함.
+
+        (reviews.order_id, reviews.product_id) 
+
+        exists in
+
+        (order_items.order_id, order_items.product_id)
+
+        -> 리뷰는 실제 구매한 상품에 대해서만 작성되어야 한다.
+
+
+    11. 리뷰 이벤트와 리뷰 테이블 정합성
+
+        event_logs에서 event_name = 'review_write'인 경우,
+
+        event_logs.review_id는 reviews.review_id에 존재해야 한다.
+
+        사용자/주문/상품 도 일치해야 한다.
+
+        -> 리뷰 작성 이벤트는 실제 리뷰와 연결되어야 한다.
+
+        -> 리뷰 이벤트 사용자와 리뷰 작성자가 일치해야 한다.
+
+        -> 리뷰 이벤트 상품과 리뷰 대상 상품이 일치해야 한다.
+
+        -> 리뷰 이벤트 주문과 리뷰 연결 주문이 일치해야 한다.
+
+
+    * orders.total_value는 order_items 기준 계산 금액과 일관되어야 한다.
+
+    단, 배송비, 쿠폰, 포인트, 세금 정책은 따로 정의하지 않았으므로 현재 단계에서 상세 계산식은 보류한다.
+
+
+-----------------------------------------------------------------------------------
+
+
+*** 논리 테이블 설계
+
+-> 각 테이블의 컬럼, PK, FK, nullable 여부, 부가 설명
+
+    1. users 테이블 - 사용자 기준 엔티티
+
+        사용자의 단위 행동 여정, 세션, 주문, 리뷰를 연결하는 기준
+
+        column          key         nullable    discription
+
+        **user_id       PK          N           사용자 식별자
+
+        signup_date     -           Y           가입일
+
+        user_type       -           N           회원/비회원 또는 신규/기존 사용자 구분
+
+        age_group       -           Y           연령대. exact age 대신 범주형으로 관리
+
+        gender          -           Y           성별. 분석 목적상 선택 속성
+
+        -> user_id가 여러 테이블에서 참조됨.
+
+        sessions.user_id, event_log.user_id, orders.user_id, reviews.user_id
+
+
+    2. sessions 테이블 - 한번의 방문 단위
+
+        퍼널 분석과 이탈 분석에 이용
+
+        column              key     nullable    description
+
+        session_id          PK      N           세션 식별자
+
+        user_id             FK      N           세션을 발생시킨 사용자
+
+        session_start_time  -       N           세션 시작 시각
+
+        session_end_time    -       Y           세션 종료 시각
+
+        traffic_source      -       Y           유입 출처
+
+        medium              -       Y           유입 매체
+
+        campaign            -       Y           캠페인명
+
+        device_type         -       Y           기기 유형
+
+        platform            -       Y           웹/앱 구분
+
+        landing_page        -       Y           첫 진입 페이지
+
+        -> FK : sessions.user_id -> users.user_id (1:N)
+
+        한 사용자는 여러 세션을 가질 수 있다. 하나의 세션은 한 사용자에게 속한다.
+
+    
+    3. event_logs 테이블
+
+        사용자의 행동 이벤트를 저장하는 중심 로그 테이블
+
+        column              key     nullable    description
+
+        event_id            PK      N           이벤트 식별자
+
+        event_name          -       N           이벤트 이름
+
+        event_timestamp     -       N           이벤트 발생 시각
+
+        event_date          -       N           이벤트 발생 날짜
+
+        user_id             FK      N           이벤트를 발생시킨 사용자
+
+        session_id          FK      N           이벤트가 속한 세션
+
+        product_id          FK      Y           상품 관련 이벤트에서 참조하는 상품
+
+        category_id         FK      Y           상품 목록/카테고리 관련 이벤트에서 참조하는 카테고리
+
+        order_id            FK      Y           구매 이벤트에서 참조하는 주문
+
+        review_id           FK      Y           리뷰 작성 이벤트에서 참조하는 리뷰
+
+        search_term         -       Y           검색 이벤트의 검색어
+
+        list_id             -       Y           상품 목록 식별자 또는 목록 유형
+
+        page_number         -       Y           검색/목록 페이지 번호
+
+        quantity            -       Y           장바구니 추가 수량
+
+        price               -       Y           이벤트 발생 시점의 상품 가격
+
+        items_count         -       Y           결제 시작 시점의 상품 개수
+
+        total_value         -       Y           결제/구매 관련 총 금액
+
+        payment_method      -       Y           결제 수단
+
+        rating              -       Y           리뷰 평점
+
+        review_length       -       Y           리뷰 길이
+
+        -> 모든 이벤트들이 한 테이블에 존재하기 떄문에 nullable이 많음.
+
+        * FK 관계 정리
+        
+        evevent_logs.user_id    ->   users.user_id
+
+        event_logs.session_id   ->   sessions.session_id
+
+        event_logs.product_id   ->   products.product_id
+
+        event_logs.category_id  ->   categories.category_id
+
+        event_logs.order_id     ->   orders.order_id
+
+        event_logs.review_id    ->   reviews.review_id
+
+    ** 이러한 구조는 이벤트 종류가 많아지면 NULL 컬럼으로 인해 비효율적임.
+
+    추후에 이벤트 파라미터 구조가 복잡해질 시에 event_params 또는 이벤트 별 상세 테이블 분리를 검토할 예정.
+
+
+------------------------------------------------------------------------------------
+
+    4. categories - 상품 분류 기준 테이블
+
+        카테고리별 조회, 장바구니, 구매, 리뷰 분석시 사용
+
+        column              key     nullable    description
+
+        category_id         PK      N           카테고리 식별자
+
+        category_name       -       N           카테고리명
+
+        parent_category_id  FK      Y           상위 카테고리 식별자
+
+        -> 계층 구조를 둔다면 자기 참조 관계가 생길수도 있음.
+
+        categories.parent_category_id -> categories.category_id
+
+
+    5. products - 상품 정보를 관리하는 핵심 기준 테이블
+
+        view_item, add_to_cart, order_items, reviews 에서 참조됨.
+
+        column              key     nullable    description
+
+        product_id          PK      N           상품 식별자
+
+        product_name        -       N           상품명
+
+        category_id         FK      N           상품이 속한 카테고리
+
+        brand               -       Y           브랜드명
+
+        price               -       N           현재 상품 가격
+
+        created_at          -       Y           상품 등록 시각
+
+        is_active           -       N           현재 판매 활성 여부
+
+        FK : products.category_id -> categories.category_id (1:N)
+
+        한 카테고리는 여러 상품을 가질 수 있다. 하나의 상품은 하나의 카테고리에 속한다.
+
+        * 가격은 시점에 따라 다르기 때문에, 현재 기준과 구매 당시의 상품 가격이 다르다.
+
+        * is_active는 과거에 판매했지만, 현재 판매 종료일수 있음. TRUE/FALSE로 구분 가능
+
+    
+    6. orders - 구매 완료로 생성된 주문 단위를 관리하는 테이블
+
+        purchase 이벤트가 발생했을 때 연결되는 결과물.
+
+        column              key     nullable    description
+
+        order_id            PK      N           주문 식별자
+
+        user_id             FK      N           주문한 사용자
+
+        session_id          FK      N           주문이 발생한 세션
+
+        order_timestamp     -       N           주문 발생 시각
+
+        total_value         -       N           주문 총액
+
+        payment_method      -       Y           결제 수단
+
+        order_status        -       N           주문 상태
+
+        FK : orders.user_id -> users.user_id (1:N)
+
+        orders.session_id -> sessions.session_id (1:N)
+
+        한 사용자는 여러 주문을 할 수 있다. 
+        
+        한 세션에서 0개 이상의 주문이 발생할 수 있다.
+
+    
+    7.order_items - 주문 안에 포함된 개별 상품 행을 관리
+
+        column              key     nullable    description
+
+        order_item_id       PK      N           주문 상품 행 식별자
+
+        order_id            FK      N           주문 식별자
+
+        product_id          Fk      N           상품 식별자
+
+        quantity            -       N           구매 수량
+
+        item_price          -       N           구매 당시 상품 단가
+
+        discount_amount     -       Y           상품 단위 할인 금액
+
+        FK : order_items.order_id -> orders.order_id (1:N)
+
+        order_items.product_id -> products.product_id (1:N)
+
+        한 주문은 여러 주문 상품 행을 가진다.
+
+        한 상품은 여러 주문 상품 행에 포함될 수 있다.
+
+        * payment_method는 결제 수단.
+
+            card, bank_transfer, kakao_pay, naver_pay
+
+        * order_status는 주문 상태
+
+            paid, cancelled, refunded, completed
+
+            -> 구매 완료 주문만 분석할지, 취소 주문을 제외할지, 환불 주문을 별도로 볼지 고민해야함.
+
+
+    8. reviews - 구매 이후 사용자가 작성한 리뷰 정보를 관리
+
+        column              key     nullable    description
+
+        review_id           PK      N           리뷰 식별자
+
+        user_id             FK      N           리뷰 작성자
+
+        product_id          FK      N           리뷰 대상 상품
+
+        order_id            Fk      N           리뷰와 연결된 주문
+
+        rating              -       N           리뷰 평점
+
+        review_length       -       Y           리뷰 길이
+
+        created_at          -       N           리뷰 작성 시각
+
+        FK : reviews.user_id -> users.user_id (1:N)
+
+        reviews.product_id -> products.product_id (1:N)
+
+        reviews.order_id -> orders.order_id (1:N)
+
+        한 사용자는 여러 리뷰를 작성할 수 있다.
+
+        한 상품은 여러 리뷰를 받을 수 있다.
+
+        한 주문에서 여러 상품 리뷰가 작성될 수 있다.
+
+        * 추가적인 조건
+
+        (reviews.order_id, reviews.product_id) -> (order_items.order_id, order_items.product_id)
+
+        리뷰는 해당 주문에 포함된 상품에 대해서만 작성되어야 한다.
+
+        event_logs.review_id -> reviews.review_id
+
+        *** rating과 review_length는 event_logs와 reviews에 존재할 수 있지만,
+
+        원칙적으로 리뷰의 상세 정보이기 때문에 reviews에 두는게 좋음.
+
+        단, event_logs에 같이 두면 리뷰 이벤트만 빠르게 분석할 수 있는 장점이 있음.
+
+
+--------------------------------------------------------------------------------------------
+
+테이블 명세서 작성 : table_specification.md 
+
+    역할 + MySQL로 만들 것을 염두에 두고 type 후보까지 포함
+
+    구조
+
+        # Table Specification
+
+        ## 문서 목적
+
+        ## 설계 기준
+
+        ## users
+
+        ## sessions
+
+        ## event_logs
+
+        ## categories
+
+        ## products
+
+        ## orders
+
+        ## order_items
+
+        ## reviews
+
+--------------------------------------------------------------------------------------------
+
+초안 작성
+
+    ## 문서 목적
+
+        - 이 문서는 로그 기반 이커머스 유저 여정 분석 프로젝트의 논리적 테이블 명세를 정리한다.
+
+        - 앞서 정의한 이벤트, 엔티티, 관계, 정합성 검증 규칙을 바탕으로 각 테이블의 역할, 칼럼, 키,
+
+        nullable 여부, 데이터 타입 후보를 명시한다.
+
+        - 본 문서는 실제 MySQL `CREATE Table` 문을 작성하기 전 단계의 설계 문서이며,
+
+        이후 `sql/schema.sql` 작성의 기준으로 사용한다.
+
+    
+    ## 설계 기준
+
+        - DBMS는 MySQL을 기준으로 한다.
+
+        - 이벤트 로그는 1차 설계에서 단일 `event_logs` 테이블로 관리한다.
+
+        - 이벤트별 파라미터는 `event_logs`의 nullable 칼럼으로 관리한다.
+
+        - 사용자 단위 분석 편의를 위해 `event_logs`에는 `user_id`와 `session_id`를 모두 저장한다.
+
+        - 상세 정보는 `users`, `sessions`, `products`, `orders`, `reviews` 등 별도 엔티티 테이블에서 관리한다.
+
+        - 정합성 검증은 `docs/data_quality_rules.md`에서 별도로 관리한다.
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

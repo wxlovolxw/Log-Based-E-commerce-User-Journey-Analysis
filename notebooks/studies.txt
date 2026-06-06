@@ -1304,25 +1304,140 @@ ex) view_item 이벤트
 
         - 정합성 검증은 `docs/data_quality_rules.md`에서 별도로 관리한다.
 
-        
+--------------------------------------------------------------------------------------------
+
+MySQL 물리 설계 및 실행 검증
+
+    1. 논리 설계와 물리 설계의 차이
+
+        논리 설계  - 테이블의 역할, 칼럼, PK/FK, nullable 여부를 정의
+
+        물리 설계 - 실제 DBMS에서 실행 가능한 CREATE TABLE 문으로 구현
+
+        -> 이번 프로젝트에서는 table_specification.md 를 사람용 논리 테이블 명세서로 작성.
+
+        이를 기준으로 MySQL용 schema.sql을 작성.
 
 
+    2. 테이블 생성 순위
+
+        FK 제약 조건으로 인해 테이블 생성 순서가 중요
+
+        참조되는 기준 테이블을 먼저 만들고, 이를 참조하는 테이블을 나중에 만든다.
+
+        users -> categories -> products -> sessions -> orders -> order_items -> reviews -> event_logs
+
+        * event_logs는 여러 엔티티를 참조하므로 마지막에 참조
+
+    
+    3. seed_data.sql의 역할
+
+        실제 분석 전 구조 검즐을 위한 샘플 데이터를 삽입하는 파일.
+
+        단순히 데이터를 많이 넣는 것이 목적이 아닌, 퍼널 분석과 이탈 분석을 테스트할수 있는 사용자 여정 시나리오를 포함.
+
+        해당 샘플 데이터에는
+
+            구매 완료, 검색 후 이탈, 상품 상세 조회 후 이탈, 장바구니 이탈, 구매 후 리뷰 작성
+
+        케이스를 포함.
 
 
+    4. basic_validation.sql과 quality_checks.sql의 차이
+
+        - basic_validation.sql은 테이블 생성과 샘플 데이터 삽입이 정상적인지 확인하는 기본 실행 검증용 파일
+
+            -> 테이블별 row count, event_logs 43건 여부, 주요 조인 결과 정상 조회 여부
+
+        - quality_checks.sql은 데이터 정합성 검증용 파일.
+
+            -> 각 쿼리는 문제가 있는 행을 반환하도록 작성. 정상 데이터라면 모든 결과가 0건
+
+    
+    5. 정합성 검증의 의미
+
+        테이블 간 ID 참조가 실제로 맞는지, 중복 저장된 값이 서로 일치하는지, 비즈니스 규칙상 말이 되는 데이터인지 확인.
+
+        다음과 같은 규칙을 SQL로 검증
+
+            event_logs.user_id와 sessions.user_id 일치 여부
+
+            orders.user_id와 sessions.user_id 일치 여부
+
+            purchase 이벤트와 orders 테이블의 user/session/order 일치 여부
+
+            reviews의 order_id, product_id 조합이 order_items에 존재하는지
+
+            event_date가 event_timestamp의 날짜와 일치하는지
+
+            문/리뷰/세션의 시간 순서가 자연스러운지
+
+    
+    6. 실행 결과
+
+        MySQL Workbench에서 다음 순서로 실행
+
+            schema.sql 
+
+            seed_data.sql 
+
+            basic_validation.sql 
+            
+            quality_checks.sql
+
+        -> 실행 결과, 테이블 생성과 샘플 데이터 삽입이 정상 완료.
+
+            basic_validation.sql 에서 row count 확인
+
+            event_logs 43건으로 확인
+
+            quality_checks.sql 의 18개 정합성 검증 쿼리는 모두 위반 행 0건을 반환
+
+    
+    ** 이벤트 로그 설계에서는 분석의 편의를 위해 중복 저장을 허용할 수 있다.
+
+    event_logs에는 session_id만 있어도 sessions를 통해 user_id를 알 수 있지만, 
+
+    사용자 단위 분석 편의를 위해 user_id도 함께 저장하였다.
+
+    이런 중복은 정합성 검증이 필요하다.
+
+    "중복을 허용한 이유"와 "이를 검증하는 방법"을 함께 기록하는 것이 중요하다.
+
+    또한 schema.sql에서 FK와 CHECK 제약조건을 일부 적용하더라도, 모든 비즈니스 규칙을 DB 제약조건만으로 보장하기 힘들다.
+
+    예를 들어 리뷰가 실제 구매한 상품에 대해 작성되었는지는 quality_checks.sql 같은 별도 검증 쿼리로 확인하는 것이 유연하다.
 
 
+--------------------------------------------------------------------------------------------
+
+SQL 분석 쿼리 작성
+
+* 핵심질문
+
+    1. 사용자는 구매 과정에서 어디서 가장 많이 이탈하는가?
+
+    2. 어떤 행동이 구매 전환과 관련이 있는가?
+
+    3. 구매 이후 사용자는 어떤 행동을 하는가?
+
+    
+funnel_analysis.sql 작성
+
+    세션별 이벤트 도달 여부     - 각 세션이 어떤 이벤트까지 경험했는지 확인
+
+    퍼널 단계 별 도달 세션 수   - 각 단계에서 도달한 세션 수 계산
+
+    단계별 전환율              - 이전 단계 대비 다음 단계로 넘어간 비율
+
+    세션별 최종 도달 단계       - 각 세션이 어디서 멈췄는지 분류
+
+    유입 경로별 구매 전환율     - traffic_source별 purchase 도달률 확인
 
 
+    session_start -> view_item -> add_to_cart -> begin_checkout -> purchase
 
-
-
-
-
-
-
-
-
-
+    * 해당 퍼널은 엄격한 순차 퍼널이 아닌 도달 여부 기반의 퍼널.
 
 
 

@@ -181,3 +181,38 @@ SELECT
     review_rate
 FROM user_review_rate
 ORDER BY user_id;
+
+-- 7. Review session type share
+-- This query answers what share of reviews were written in the purchase session
+-- versus a separate post-purchase session.
+-- It reuses the same review_session_type classification logic as query 4.
+WITH review_session_summary AS (
+    SELECT
+        r.review_id,
+        CASE
+            WHEN e.session_id = o.session_id THEN 'same_purchase_session'
+            ELSE 'separate_post_purchase_session'
+        END AS review_session_type
+    FROM reviews r
+    JOIN orders o
+        ON r.order_id = o.order_id
+    JOIN event_logs e
+        ON r.review_id = e.review_id
+       AND e.event_name = 'review_write'
+),
+review_session_type_summary AS (
+    SELECT
+        review_session_type,
+        COUNT(DISTINCT review_id) AS review_count
+    FROM review_session_summary
+    GROUP BY review_session_type
+)
+SELECT
+    review_session_type,
+    review_count,
+    ROUND(
+        100.0 * review_count / NULLIF(SUM(review_count) OVER (), 0),
+        2
+    ) AS review_type_rate
+FROM review_session_type_summary
+ORDER BY review_session_type;

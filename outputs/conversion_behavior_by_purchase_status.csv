@@ -1,0 +1,3 @@
+purchase_status,session_count,avg_total_event_count,avg_view_item_count,avg_add_to_cart_count,begin_checkout_rate,search_rate
+non_purchase,718,4.32,1.66,0.61,11.70,38.16
+purchase,282,9.68,3.10,1.98,100.00,56.74

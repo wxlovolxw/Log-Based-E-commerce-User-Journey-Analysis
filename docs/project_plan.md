@@ -5,17 +5,19 @@
 
 ### 1.1 배경
 
-이 프로젝트는 종합 이커머스 도메인에서 발생하는 사용자 행동 로그를 기반으로 유저 여정을 분석하기 위한 분석 프로젝트이다.
+이 프로젝트는 종합 이커머스 도메인에서 발생하는 사용자 행동 로그를 기반으로 유저 여정을 분석하기 위한 end-to-end 분석 프로젝트이다.
 
-사용자의 유입, 탐색, 상품 조회, 장바구니, 구매 전환, 이탈 흐름을 이벤트 로그 단위로 추적하고, 전환 병목과 행동 패턴을 파악하는 것을 목표로 한다.
+사용자의 유입, 탐색, 상품 조회, 장바구니, 구매 전환, 이탈 흐름을 이벤트 로그 단위로 추적하고, 전환 병목과 행동 패턴을 파악하는 것을 목표로 한다. 기존 DB 설계, synthetic data 생성 및 MySQL 적재, 정합성 검증, SQL 분석 결과는 유지하되, 최종 포지션은 SQL, Python, Tableau를 연결한 분석 흐름으로 확장한다.
+
+SQL은 원천 로그에서 퍼널, 전환, 리뷰 행동 관련 핵심 지표를 정확하게 산출하는 단계로 정의한다. Python은 단순 시각화를 넘어 Python 기반 세션 단위 분석 및 구매 전환 모델링, Python 기반 구매 전환 예측 및 실험 설계 단계로 확장한다. Tableau는 최종 대시보드로 전달 가능한 형태로 분석 결과와 인사이트를 정리하는 단계로 정의한다.
 
 ### 1.2 분석 범위
 
 - 도메인: 종합 이커머스
-- 분석 방식: 로그 기반 사용자 행동 분석
+- 분석 방식: 로그 기반 사용자 행동 분석, 구매 전환 예측, A/B 테스트 설계안 도출
 - 주요 분석 대상: 사용자 이벤트 로그
-- 주요 여정: 유입 -> 탐색 -> 상품 조회 -> 장바구니 -> 구매
-- 주요 관심사: 전환율, 이탈 지점, 사용자 행동 흐름, 이벤트 정합성
+- 주요 여정: 유입 -> 탐색 -> 상품 조회 -> 장바구니 -> 구매 -> 리뷰 작성
+- 주요 관심사: 전환율, 이탈 지점, 사용자 행동 흐름, 이벤트 정합성, 구매 전환 예측, 리뷰 행동, Tableau 대시보드 설계
 
 ### 1.3 현재 상태
 
@@ -41,6 +43,12 @@
 - `sql/quality_checks.sql` 18개 정합성 검증 쿼리에서 위반 0건을 확인했다.
 - `sql/funnel_analysis.sql`, `sql/conversion_analysis.sql`, `sql/post_purchase_analysis.sql`을 synthetic data 기준으로 재실행했다.
 - `docs/analysis_results.md`를 synthetic data 기준 분석 결과로 업데이트했다.
+- `sql/session_level_features.sql`로 세션 단위 구매 전환 모델링용 feature dataset을 생성했다.
+- `scripts/model_logistic_regression.py`에 Logistic Regression baseline 모델링 코드를 분리했다.
+- `outputs/session_level_features.csv`를 기반으로 `with_checkout`, `without_checkout` 두 가지 모델 구성을 비교했다.
+- `notebooks/01_user_journey_conversion_analysis.ipynb`에서는 저장된 모델링 결과 CSV를 불러와 요약 및 해석했다.
+- `docs/ab_test_design.md`에 SQL 분석 및 Logistic Regression baseline 결과 기반 A/B 테스트 설계안을 1차 정리했다.
+- `docs/tableau_dashboard_design.md`에 SQL 분석, Python 모델링, A/B 테스트 설계 결과를 전달하기 위한 Tableau 대시보드 설계안을 1차 정리했다.
 - `README.md`를 GitHub 포트폴리오 제출용 한글 README로 정리했다.
 
 ## 2. 프로젝트 목표
@@ -50,8 +58,12 @@
 - 종합 이커머스 사용자 행동 로그를 분석 가능한 형태로 정의한다.
 - GA4 스타일 이벤트 설계를 기준으로 이벤트 체계를 정리한다.
 - 사용자 여정의 주요 단계별 전환과 이탈을 분석한다.
+- 구매 이후 리뷰 작성 행동을 분석한다.
+- Python 기반 세션 단위 분석 및 구매 전환 모델링으로 분석 범위를 확장한다.
+- 분석 결과를 바탕으로 A/B 테스트 설계안을 도출한다.
+- Tableau 대시보드로 전달 가능한 형태로 최종 지표와 인사이트를 정리한다.
 - 데이터 정합성을 검증하여 분석 결과의 신뢰도를 확보한다.
-- 최종적으로 유저 여정의 병목과 개선 가능 지점을 도출한다.
+- 최종적으로 SQL, Python, Tableau를 연결한 end-to-end 분석 흐름을 검증한다.
 
 ### 2.2 기대 산출물
 
@@ -62,7 +74,10 @@
 - 정합성 검증 규칙 문서
 - 정합성 검증 쿼리
 - 사용자 여정 분석 SQL
-- EDA 및 분석 노트북
+- Python 기반 세션 단위 분석 및 구매 전환 모델링 노트북
+- Python 기반 구매 전환 예측 및 실험 설계 노트북
+- A/B 테스트 설계안
+- Tableau 대시보드
 - 최종 분석 결과 요약
 
 ### 2.3 성공 기준
@@ -71,7 +86,11 @@
 - 이벤트 로그에서 사용자 여정 단계를 재구성할 수 있다.
 - 핵심 퍼널의 전환율과 이탈률을 산출할 수 있다.
 - 이벤트 누락, 중복, 순서 오류 등 정합성 이슈를 검증할 수 있다.
-- 분석 결과가 비즈니스 질문에 직접 답할 수 있다.
+- SQL 분석 결과를 Python 분석용 세션 단위 데이터셋으로 확장할 수 있다.
+- 구매 전환 예측 모델링을 위한 feature 후보를 정의할 수 있다.
+- 분석 결과를 바탕으로 실제 실험이 아닌 A/B 테스트 설계안을 도출할 수 있다.
+- Tableau 대시보드로 전달 가능한 지표 체계를 정리할 수 있다.
+- synthetic data 기반 분석 흐름을 검증하되, 결과를 실제 서비스 인사이트로 일반화하지 않는다.
 
 ## 3. 도메인 정의
 
@@ -132,11 +151,15 @@
 
 ### 4.0 핵심 질문별 분석 상태
 
-| 핵심 질문 | 현재 상태 | 관련 SQL |
+| 핵심 질문 | 현재 상태 | 관련 산출물 |
 |---|---|---|
 | 사용자는 구매 과정에서 어디서 가장 많이 이탈하는가? | 1차 완료 | `sql/funnel_analysis.sql` |
 | 어떤 행동이 구매 전환과 관련이 있는가? | 1차 완료 | `sql/conversion_analysis.sql` |
 | 구매 이후 사용자는 어떤 행동을 하는가? | 1차 완료 | `sql/post_purchase_analysis.sql` |
+| 세션 단위 행동 특성으로 구매 전환을 어떻게 분석할 수 있는가? | 1차 완료 | `outputs/session_level_features.csv`, `scripts/model_logistic_regression.py` |
+| 구매 전환 예측 모델링을 위해 어떤 feature를 구성할 수 있는가? | 1차 완료 | `sql/session_level_features.sql`, `scripts/model_logistic_regression.py` |
+| 분석 결과를 바탕으로 어떤 A/B 테스트 설계안을 도출할 수 있는가? | 1차 완료 | `docs/ab_test_design.md` |
+| 최종 분석 결과를 Tableau에서 어떤 대시보드 구조로 전달할 수 있는가? | 1차 완료 | `docs/tableau_dashboard_design.md` |
 
 ### 4.1 유입 및 탐색
 
@@ -155,12 +178,27 @@
 - 장바구니 담기 이후 체크아웃으로 얼마나 이동하는가?
 - 체크아웃 이후 구매 완료까지의 전환율은 어느 정도인가?
 - 구매 전환에 영향을 줄 수 있는 주요 행동 패턴은 무엇인가?
+- 세션 단위 구매 전환 여부를 설명하는 행동 지표는 무엇인가?
+- 구매 전환 예측 모델링을 위해 어떤 feature를 구성할 수 있는가?
 
-### 4.4 이탈 및 병목
+### 4.4 구매 이후 리뷰 행동
+
+- 구매 이후 리뷰 작성률은 어느 정도인가?
+- 리뷰는 구매 세션 안에서 작성되는가, 구매 이후 별도 세션에서 작성되는가?
+- 리뷰 작성 행동을 퍼널 분석 이후의 후속 행동으로 어떻게 해석할 수 있는가?
+
+### 4.5 이탈 및 병목
 
 - 유저 여정에서 이탈이 가장 크게 발생하는 단계는 어디인가?
 - 이벤트 순서상 비정상 흐름은 존재하는가?
 - 정합성 이슈가 분석 결과에 영향을 줄 수 있는가?
+
+### 4.6 A/B 테스트 설계
+
+- synthetic data 기반 퍼널 및 전환 분석 결과에서 어떤 개선 가설을 도출할 수 있는가?
+- 구매 전환 또는 리뷰 작성 행동 개선을 위해 어떤 실험군과 대조군을 설계할 수 있는가?
+- 실험 성공 지표와 보조 지표는 무엇으로 정의할 수 있는가?
+- 실제 A/B 테스트를 수행한 것이 아니라, 분석 결과를 바탕으로 A/B 테스트 설계안을 도출하는 수준으로 정리한다.
 
 ## 5. 현재 설계
 
@@ -243,7 +281,23 @@ MySQL 기준 물리 스키마는 `sql/schema.sql`에 작성했다. 소규모 `sq
 | synthetic data 정합성 검증 | 완료 |
 | synthetic data 기준 SQL 분석 재실행 | 완료 |
 | synthetic data 기준 분석 결과 문서화 | 완료 |
+| 세션 단위 feature dataset 생성 | 완료 |
+| Logistic Regression baseline 모델링 스크립트 작성 | 완료 |
+| with_checkout / without_checkout 모델 비교 | 1차 완료 |
+| 노트북 내 저장된 모델링 결과 요약 | 완료 |
+| 분석 결과 기반 A/B 테스트 설계안 작성 | 1차 완료 |
+| Tableau 대시보드 설계안 작성 | 1차 완료 |
 | GitHub 포트폴리오용 README 정리 | 완료 |
+
+### 5.5 SQL / Python / Tableau 역할 구분
+
+| 도구 | 역할 | 산출물 방향 |
+|---|---|---|
+| SQL | 원천 로그와 관계형 테이블에서 퍼널, 전환, 리뷰 행동 관련 핵심 지표를 정확하게 산출한다. | 정합성 검증 쿼리, 퍼널 분석 쿼리, 전환 분석 쿼리, 리뷰 행동 분석 쿼리 |
+| Python | SQL 분석 결과를 세션 단위 분석 데이터셋으로 확장하고, 구매 전환 예측 및 실험 설계에 활용한다. | 분석 노트북, feature 정의, 모델링 결과, 실험 설계안 |
+| Tableau | SQL과 Python 분석 결과를 대시보드로 시각화할 수 있도록 핵심 지표와 인사이트를 정리한다. | 퍼널/전환/리뷰 행동 대시보드 설계안, 최종 발표용 시각화 방향 |
+
+현재 완료된 SQL 분석은 유지한다. Python과 Tableau는 기존 SQL 결과를 대체하는 것이 아니라, SQL에서 산출한 지표와 세션 단위 데이터를 바탕으로 분석과 대시보드 전달 구조를 확장하는 단계로 정의한다.
 
 ## 6. 프로젝트 일정
 
@@ -267,20 +321,35 @@ MySQL 기준 물리 스키마는 `sql/schema.sql`에 작성했다. 소규모 `sq
 - 중복 및 순서 검증 쿼리 작성
 - 검증 결과 정리
 
-### 6.4 4단계: 유저 여정 분석
+### 6.4 4단계: SQL 기반 유저 여정 분석
 
 - 세션 단위 행동 흐름 분석
 - 퍼널 전환율 분석
 - 단계별 이탈률 분석
+- 구매 전환 관련 행동 분석
+- 구매 이후 리뷰 행동 분석
 - 주요 병목 구간 도출
 
-### 6.5 5단계: 결과 정리
+### 6.5 5단계: Python 기반 세션 단위 분석 및 구매 전환 모델링
+
+- SQL 분석 결과를 세션 단위 분석 데이터셋으로 정리
+- 구매 전환 여부별 행동 특성 분석
+- 구매 전환 예측 모델링을 위한 feature 후보 구성
+- `outputs/session_level_features.csv`를 기반으로 세션 단위 구매 전환 예측 모델링 수행
+- `scripts/model_logistic_regression.py`에 Logistic Regression baseline 모델링 코드 분리
+- `with_checkout`, `without_checkout` 두 가지 feature 구성 비교
+- 저장된 모델링 결과 CSV를 노트북에서 요약 및 해석
+- Python 기반 구매 전환 예측 및 실험 설계 관점에서 A/B 테스트 설계안 도출
+
+### 6.6 6단계: Tableau 대시보드 및 결과 정리
 
 - 핵심 인사이트 정리
+- Tableau 대시보드 설계
+- SQL, Python, Tableau 분석 흐름 정리
 - 분석 한계 정리
 - 후속 분석 과제 정리
 
-### 6.6 현재 1차 SQL 분석 완료 범위
+### 6.7 현재 1차 SQL 분석 완료 범위
 
 - MySQL 물리 스키마 작성 완료
 - 샘플 데이터 작성 완료
@@ -292,13 +361,28 @@ MySQL 기준 물리 스키마는 `sql/schema.sql`에 작성했다. 소규모 `sq
 - synthetic data 기준 18개 정합성 검증 모두 위반 0건 확인 완료
 - 핵심 질문 3개에 대한 SQL 분석을 synthetic data 기준으로 재실행 완료
 - `docs/analysis_results.md`를 synthetic data 기준으로 업데이트 완료
+- `outputs/session_level_features.csv` 기반 세션 단위 feature dataset 구성 완료
+- `scripts/model_logistic_regression.py` 기반 Logistic Regression baseline 모델링 완료
+- `with_checkout` 모델은 `begin_checkout_count`, `has_begin_checkout`을 포함했으며 F1 0.9032, ROC-AUC 0.9838을 보였다.
+- `without_checkout` 모델은 구매 직전 행동인 `begin_checkout_count`, `has_begin_checkout`을 제외했으며 F1 0.8889, ROC-AUC 0.9834를 보였다.
+- `begin_checkout`을 제외해도 성능이 크게 유지되어, 결제 이전 세션 행동 패턴만으로도 구매 전환 여부를 일정 수준 이상 구분할 수 있음을 확인했다.
+- `without_checkout` 모델 기준 `event_count`, `has_add_to_cart`가 주요 양의 신호로 나타났다.
+- 일부 세부 행동 횟수 변수는 `event_count`, `has_add_to_cart` 등과 정보가 중복되면서 계수 부호가 분산된 결과로 해석했다.
+- 초기 모델링 과정에서 `session_duration_minutes`가 `purchase`, `review_write` 이벤트를 포함할 수 있는 target leakage 가능성을 확인했다.
+- 이후 `sql/session_level_features.sql`에서 `session_duration_minutes`를 `purchase`, `review_write` 제외 기준으로 재정의했다.
+- 수정 후에도 모델 성능이 유지되어, 보수적으로 feature 정의를 조정한 뒤에도 모델링 흐름이 안정적으로 작동함을 확인했다.
+- SQL 퍼널 분석과 Logistic Regression baseline 결과를 바탕으로 `docs/ab_test_design.md`에 A/B 테스트 설계안을 1차 정리했다.
+- SQL 분석, Python 모델링, A/B 테스트 설계 결과를 하나의 흐름으로 전달하기 위한 `docs/tableau_dashboard_design.md`를 1차 정리했다.
 - `README.md`를 GitHub 포트폴리오 제출용으로 정리 완료
 
-### 6.7 현재 한계
+### 6.8 현재 한계
 
 - 현재 주요 분석 결과는 `sql/seed_synthetic_data.sql` 기반 synthetic data다.
 - synthetic data는 SQL 쿼리 구조와 분석 흐름 검증에는 적합하지만, 실제 서비스 인사이트로 일반화할 수는 없다.
+- Logistic Regression baseline 성능 역시 실제 서비스 예측 성능으로 일반화하지 않는다.
+- 모델링 목적은 실제 운영 모델 구축이 아니라, 세션 단위 feature 설계와 구매 전환 예측 분석 파이프라인을 검증하는 것이다.
 - 실제 인사이트 도출을 위해서는 실제 로그 데이터 또는 더 현실적인 생성 규칙을 반영한 데이터가 필요하다.
+- 현재 단계의 A/B 테스트는 실제 실험 수행 결과가 아니라, synthetic data 기반 분석 흐름에서 확인한 퍼널 및 전환 지표를 바탕으로 도출하는 설계안이다.
 
 ## 7. 현재 결정사항
 
@@ -330,6 +414,6 @@ MySQL 기준 물리 스키마는 `sql/schema.sql`에 작성했다. 소규모 `sq
 
 ## 9. 다음 단계
 
-1. Python 기반 분석 및 시각화로 확장
-2. Tableau 대시보드 설계
-3. 분석 결과를 포트폴리오 요약 형태로 정리
+1. 최종 정리
+2. 실행 재현성 점검
+3. git commit

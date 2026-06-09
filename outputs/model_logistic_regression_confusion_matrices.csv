@@ -1,0 +1,9 @@
+model,actual,predicted,count
+with_checkout,0,0,132
+with_checkout,0,1,12
+with_checkout,1,0,0
+with_checkout,1,1,56
+without_checkout,0,0,130
+without_checkout,0,1,14
+without_checkout,1,0,0
+without_checkout,1,1,56

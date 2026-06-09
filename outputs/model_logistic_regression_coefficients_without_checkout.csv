@@ -1,0 +1,13 @@
+model,feature,coefficient,abs_coefficient
+without_checkout,event_count,7.234788359309215,7.234788359309215
+without_checkout,add_to_cart_count,-2.843299773845362,2.843299773845362
+without_checkout,has_add_to_cart,1.9585566914385584,1.9585566914385584
+without_checkout,view_item_count,-1.3064231123966143,1.3064231123966143
+without_checkout,unique_product_count,-1.3064231123966143,1.3064231123966143
+without_checkout,search_count,-0.5616608850097452,0.5616608850097452
+without_checkout,has_search,-0.5616608850097452,0.5616608850097452
+without_checkout,session_duration_minutes,-0.29851882885517617,0.29851882885517617
+without_checkout,view_item_list_count,-0.26878289449321524,0.26878289449321524
+without_checkout,unique_category_count,-0.26878289449321524,0.26878289449321524
+without_checkout,has_view_item_list,-0.26878289449321524,0.26878289449321524
+without_checkout,has_view_item,0.1791406440544875,0.1791406440544875

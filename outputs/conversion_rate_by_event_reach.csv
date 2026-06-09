@@ -1,0 +1,9 @@
+event_name,reached_event_flag,session_count,purchase_session_count,purchase_conversion_rate
+add_to_cart,1,578,282,48.79
+add_to_cart,0,422,0,0.00
+begin_checkout,1,366,282,77.05
+begin_checkout,0,634,0,0.00
+search,1,434,160,36.87
+search,0,566,122,21.55
+view_item,1,867,282,32.53
+view_item,0,133,0,0.00

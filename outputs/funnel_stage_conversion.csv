@@ -1,0 +1,6 @@
+funnel_stage,reached_session_count,session_start_reach_rate,previous_stage_conversion_rate
+session_start,1000,100.00,NULL
+view_item,867,86.70,86.70
+add_to_cart,578,57.80,66.67
+begin_checkout,366,36.60,63.32
+purchase,282,28.20,77.05

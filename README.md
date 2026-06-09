@@ -171,6 +171,7 @@ A/B 테스트 역시 실제 실험을 수행한 것이 아니라, synthetic data
 - [`docs/analysis_results.md`](docs/analysis_results.md)
 - [`docs/ab_test_design.md`](docs/ab_test_design.md)
 - [`docs/tableau_dashboard_design.md`](docs/tableau_dashboard_design.md)
+- [`docs/portfolio_summary.md`](docs/portfolio_summary.md)
 - [`docs/decision_log.md`](docs/decision_log.md)
 
 ## 실행 방법
@@ -202,6 +203,7 @@ python scripts/model_logistic_regression.py
 
 ## 다음 단계
 
-- 실제 Tableau 구현 또는 최종 포트폴리오 정리
+- 실제 Tableau 구현 또는 최종 발표/면접용 설명 정리
 
 분석 결과 기반 A/B 테스트 설계안은 [`docs/ab_test_design.md`](docs/ab_test_design.md)에 1차 정리했습니다. Tableau 대시보드 설계안은 [`docs/tableau_dashboard_design.md`](docs/tableau_dashboard_design.md)에 1차 정리했습니다.
+프로젝트 1차 포트폴리오 요약 문서는 [`docs/portfolio_summary.md`](docs/portfolio_summary.md)에 정리했습니다.

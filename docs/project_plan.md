@@ -49,6 +49,8 @@ SQL은 원천 로그에서 퍼널, 전환, 리뷰 행동 관련 핵심 지표를
 - `notebooks/01_user_journey_conversion_analysis.ipynb`에서는 저장된 모델링 결과 CSV를 불러와 요약 및 해석했다.
 - `docs/ab_test_design.md`에 SQL 분석 및 Logistic Regression baseline 결과 기반 A/B 테스트 설계안을 1차 정리했다.
 - `docs/tableau_dashboard_design.md`에 SQL 분석, Python 모델링, A/B 테스트 설계 결과를 전달하기 위한 Tableau 대시보드 설계안을 1차 정리했다.
+- `docs/portfolio_summary.md`에 포트폴리오 및 면접 설명용 1차 요약 문서를 작성했다.
+- `docs/interview_project_script.md`에 면접용 30초/1분/2분 프로젝트 설명과 예상 질문 답변을 정리했다.
 - `README.md`를 GitHub 포트폴리오 제출용 한글 README로 정리했다.
 
 ## 2. 프로젝트 목표
@@ -287,6 +289,8 @@ MySQL 기준 물리 스키마는 `sql/schema.sql`에 작성했다. 소규모 `sq
 | 노트북 내 저장된 모델링 결과 요약 | 완료 |
 | 분석 결과 기반 A/B 테스트 설계안 작성 | 1차 완료 |
 | Tableau 대시보드 설계안 작성 | 1차 완료 |
+| 포트폴리오 요약 문서 작성 | 1차 완료 |
+| 면접용 프로젝트 설명 문서 작성 | 1차 완료 |
 | GitHub 포트폴리오용 README 정리 | 완료 |
 
 ### 5.5 SQL / Python / Tableau 역할 구분
@@ -373,6 +377,8 @@ MySQL 기준 물리 스키마는 `sql/schema.sql`에 작성했다. 소규모 `sq
 - 수정 후에도 모델 성능이 유지되어, 보수적으로 feature 정의를 조정한 뒤에도 모델링 흐름이 안정적으로 작동함을 확인했다.
 - SQL 퍼널 분석과 Logistic Regression baseline 결과를 바탕으로 `docs/ab_test_design.md`에 A/B 테스트 설계안을 1차 정리했다.
 - SQL 분석, Python 모델링, A/B 테스트 설계 결과를 하나의 흐름으로 전달하기 위한 `docs/tableau_dashboard_design.md`를 1차 정리했다.
+- 프로젝트 설명을 문제 정의, 분석 흐름, 핵심 결과, 해석, 한계, 확장 방향 중심으로 정리한 `docs/portfolio_summary.md`를 작성했다.
+- 면접에서 사용할 30초/1분/2분 설명과 예상 질문 답변을 정리한 `docs/interview_project_script.md`를 작성했다.
 - `README.md`를 GitHub 포트폴리오 제출용으로 정리 완료
 
 ### 6.8 현재 한계
@@ -414,6 +420,6 @@ MySQL 기준 물리 스키마는 `sql/schema.sql`에 작성했다. 소규모 `sq
 
 ## 9. 다음 단계
 
-1. 최종 정리
+1. 실제 Tableau 구현 또는 최종 발표자료/자소서용 문장 변환
 2. 실행 재현성 점검
 3. git commit

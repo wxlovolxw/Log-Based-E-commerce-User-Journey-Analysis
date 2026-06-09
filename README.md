@@ -172,6 +172,7 @@ A/B 테스트 역시 실제 실험을 수행한 것이 아니라, synthetic data
 - [`docs/ab_test_design.md`](docs/ab_test_design.md)
 - [`docs/tableau_dashboard_design.md`](docs/tableau_dashboard_design.md)
 - [`docs/portfolio_summary.md`](docs/portfolio_summary.md)
+- [`docs/interview_project_script.md`](docs/interview_project_script.md)
 - [`docs/decision_log.md`](docs/decision_log.md)
 
 ## 실행 방법
